@@ -1,7 +1,9 @@
 @{
     Name        = 'WebSearch'
     # Enable offers indexing because Windows Search draws incorrectly without it. Both states refresh
-    # Explorer and SearchHost unless the launcher runs with /noAction.
+    # Explorer and SearchHost unless the launcher runs with /noAction. The taskbar search box is
+    # the user's layout, so only running a launcher changes it: the icon for Disable, the box for
+    # Enable. Replaying a recorded state on an update leaves it as it is.
     Description = 'Turns web search and search highlights on or off. Enable installs the Bing search provider through WinGet and, when search indexing is off, offers to turn it on.'
     Elevation   = 'Admin'
     Script      = 'WebSearch.ps1'
@@ -24,10 +26,10 @@
                 @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\SearchSettings'; Name = 'IsDeviceSearchHistoryEnabled'; Type = 'DWord'; Data = 0; AllowOsProtected = $true }
                 @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\SearchSettings'; Name = 'IsMSACloudSearchEnabled'; Type = 'DWord'; Data = 0; AllowOsProtected = $true }
                 @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\SearchSettings'; Name = 'SafeSearchMode'; Type = 'DWord'; Data = 0; AllowOsProtected = $true }
-                @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search'; Name = 'SearchboxTaskbarMode'; Type = 'DWord'; Data = 1; AllowOsProtected = $true }
                 @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings'; Name = 'IsDynamicSearchBoxEnabled'; Type = 'DWord'; Data = 0; AllowOsProtected = $true }
             )
             MachineAction         = 'Disable-AtlasWebSearchMachine'
+            UserAction            = 'Disable-AtlasWebSearchUser'
         }
         @{
             Name                  = 'Enable'
@@ -47,7 +49,6 @@
                 @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\SearchSettings'; Name = 'IsMSACloudSearchEnabled'; Operation = 'Delete'; AllowOsProtected = $true }
                 @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\SearchSettings'; Name = 'SafeSearchMode'; Operation = 'Delete'; AllowOsProtected = $true }
                 @{ Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\SearchSettings'; Name = 'IsDynamicSearchBoxEnabled'; Type = 'DWord'; Data = 1; AllowOsProtected = $true }
-                @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search'; Name = 'SearchboxTaskbarMode'; Type = 'DWord'; Data = 2; AllowOsProtected = $true }
             )
             MachineAction         = 'Enable-AtlasWebSearchMachine'
             UserAction            = 'Enable-AtlasWebSearchUser'

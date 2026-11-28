@@ -1,8 +1,28 @@
 # Companion for the WebSearch toggle: turns web search and search highlights on or off, and
 # installs the Bing search provider for Enable. The machine functions run as Administrator
 # when you run a launcher, when the install applies Disable and when an update replays the
-# recorded state. Enable-AtlasWebSearchUser runs in your own unelevated process after Enable,
-# and is replayed for each new account at first sign-in.
+# recorded state. The user functions run in your own unelevated process after either state,
+# and are replayed for each new account at first sign-in and for each account after an update.
+
+function Set-AtlasWebSearchTaskbarMode {
+    # The taskbar search box is part of the user's layout, so only a launcher run changes
+    # it. A replay, which has no launcher, keeps the box the way the user left it.
+    param($Toggle, [Parameter(Mandatory = $true)][int]$Mode)
+
+    if ([string]::IsNullOrWhiteSpace([string]$Toggle.LauncherPath)) {
+        return
+    }
+    # Windows can protect this value; the search box then stays as it was.
+    Invoke-AtlasRegistryEntries -Scope CurrentUser -Entries @(
+        @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search'; Name = 'SearchboxTaskbarMode'; Type = 'DWord'; Data = $Mode; AllowOsProtected = $true }
+    )
+}
+
+function Disable-AtlasWebSearchUser {
+    param($Toggle)
+
+    Set-AtlasWebSearchTaskbarMode -Toggle $Toggle -Mode 1
+}
 
 function Disable-AtlasWebSearchMachine {
     param($Toggle)
@@ -64,6 +84,8 @@ function Enable-AtlasWebSearchMachine {
 function Enable-AtlasWebSearchUser {
     param($Toggle)
 
+    # Search highlights show in the search box.
+    Set-AtlasWebSearchTaskbarMode -Toggle $Toggle -Mode 2
     if (-not $Toggle.Silent) {
         Write-AtlasStep -Text 'Installing the Bing search provider from the Microsoft Store...'
     }

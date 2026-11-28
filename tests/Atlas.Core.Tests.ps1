@@ -145,6 +145,28 @@ Describe 'Get-AtlasContext install state' {
         $context.IsChoosingAgain | Should -Be $ChoosingAgain
     }
 
+    It 'reads the version an update starts from when the install state <Case>' -TestCases @(
+        @{ Case = 'records it'; Stored = '0.6.2'; Expected = '0.6.2' }
+        @{ Case = 'has none'; Stored = $null; Expected = $null }
+        @{ Case = 'has a blank one'; Stored = ' '; Expected = $null }
+    ) {
+        $state = [ordered]@{
+            mode = 'Upgrade'; targetVersion = '0.6.3'; userSid = $null; userSessionId = $null
+            transactionId = '31f30158-28ea-4e0c-86b5-d8f3e33b81f5'; options = @()
+        }
+        if ($null -ne $Stored) { $state.fromVersion = $Stored }
+        $state = [pscustomobject]$state
+        $context = Get-AtlasContext -Refresh -WindowsPath (Join-Path $TestDrive 'Windows') `
+            -StateReader { $state }.GetNewClosure() -WindowsBuildReader { 26200 }
+        $context.FromVersion | Should -Be $Expected
+
+        # Outside an install there is no update to start from.
+        $document = [pscustomobject]@{ installedVersion = '0.6.3'; mode = 'Upgrade'; options = @(); history = @() }
+        $after = Get-AtlasContext -Refresh -WindowsPath (Join-Path $TestDrive 'Windows') -StateReader { $null } `
+            -DocumentReader { $document }.GetNewClosure() -WindowsBuildReader { 26200 }
+        $after.FromVersion | Should -BeNullOrEmpty
+    }
+
     It 'refuses an update path it doesn''t know' {
         $state = [pscustomobject]@{ mode = 'Upgrade'; targetVersion = '0.6.0'; userSid = $null; userSessionId = $null; transactionId = 'x'; options = @(); choices = 'Sometimes' }
         $reader = { $state }.GetNewClosure()

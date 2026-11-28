@@ -60,8 +60,8 @@ function Get-AtlasContext {
         Returns cached information about the machine and the current install run.
     .OUTPUTS
         PSCustomObject with filesystem paths, Windows facts and the recorded install
-        mode, option set, update path (Choices, IsChoosingAgain), target version and
-        interactive-user identity.
+        mode, option set, update path (Choices, IsChoosingAgain), target version, the
+        version an update starts from and interactive-user identity.
     #>
     param(
         [switch]$Refresh,
@@ -129,6 +129,7 @@ function Get-AtlasContext {
     $installedVersion = $null
     $mode = $null
     $targetVersion = $null
+    $fromVersion = $null
     $interactiveUserSid = $null
     $interactiveUserSessionId = $null
     $transactionId = $null
@@ -149,6 +150,11 @@ function Get-AtlasContext {
             }
         }
         $targetVersion = [string]$installState.targetVersion
+        # The Atlas version an update starts from, recorded when the install began.
+        $storedFrom = $installState.PSObject.Properties['fromVersion']
+        if ($null -ne $storedFrom -and -not [string]::IsNullOrWhiteSpace([string]$storedFrom.Value)) {
+            $fromVersion = [string]$storedFrom.Value
+        }
         $interactiveUserSid = if ([string]::IsNullOrWhiteSpace([string]$installState.userSid)) {
             $null
         }
@@ -203,6 +209,9 @@ function Get-AtlasContext {
         InstalledVersion         = $installedVersion
         Mode                     = if ($null -ne $mode) { $mode } else { 'Legacy' }
         TargetVersion            = $targetVersion
+        # The Atlas version an update or reinstall starts from; $null on a fresh install
+        # and outside an install.
+        FromVersion              = $fromVersion
         InteractiveUserSid       = $interactiveUserSid
         InteractiveUserSessionId = $interactiveUserSessionId
         TransactionId            = $transactionId

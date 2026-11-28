@@ -33,12 +33,10 @@ Describe 'Search privacy on Windows that refuses per-user preferences' {
         if ($Route -eq 'Privacy tweak') {
             $definition = Import-PowerShellDataFile (Join-Path $script:AtlasTestScriptsRoot 'Tweaks\privacy\search-settings.psd1')
             $entries = $definition.Registry
-            $expectedMode = 1
         } else {
             $definition = Import-PowerShellDataFile (Join-Path $script:AtlasTestRepoRoot 'package\Executables\AtlasModules\Toggles\General\WebSearch.psd1')
             $stateName = if ($Route -eq 'Enable Web Search') { 'Enable' } else { 'Disable' }
             $entries = @($definition.States | Where-Object Name -eq $stateName)[0].Registry
-            $expectedMode = if ($stateName -eq 'Enable') { 2 } else { 1 }
         }
         foreach ($entry in $entries) {
             $entry.Path = if ($entry.Path -like '*\SearchSettings') { $script:searchSettings } else { $script:searchValues }
@@ -46,7 +44,9 @@ Describe 'Search privacy on Windows that refuses per-user preferences' {
         Set-ItemProperty -LiteralPath $script:searchValues -Name AllowCloudSearch -Type DWord -Value 1
         { Invoke-AtlasRegistryEntries -Entries $entries -IsArm64 $false } | Should -Not -Throw
         $values = Get-Item -LiteralPath $script:searchValues
-        $values.GetValue('SearchboxTaskbarMode') | Should -Be $expectedMode
+        # The taskbar search box is the user's layout: neither the privacy tweak nor a
+        # replayed Web Search state writes it.
+        $values.GetValue('SearchboxTaskbarMode', $null) | Should -BeNullOrEmpty
         if ($Route -eq 'Enable Web Search') {
             $values.GetValue('AllowCloudSearch', $null) | Should -BeNullOrEmpty
         } else {
@@ -59,14 +59,14 @@ Describe 'Search privacy on Windows that refuses per-user preferences' {
     }
 
     It 'finishes <Route> when Windows also refuses the search box key' -ForEach @(
-        @{ Route = 'Privacy tweak' }
-        @{ Route = 'Disable Web Search' }
-        @{ Route = 'Enable Web Search' }
+        @{ Route = 'Search icon tweak'; Policy = $false }
+        @{ Route = 'Disable Web Search'; Policy = $true }
+        @{ Route = 'Enable Web Search'; Policy = $false }
     ) {
         # Windows can protect CurrentVersion\Search as well as SearchSettings.
         $searchBox = "$script:searchRoot\Search"
-        if ($Route -eq 'Privacy tweak') {
-            $entries = (Import-PowerShellDataFile (Join-Path $script:AtlasTestScriptsRoot 'Tweaks\privacy\search-settings.psd1')).Registry
+        if ($Route -eq 'Search icon tweak') {
+            $entries = (Import-PowerShellDataFile (Join-Path $script:AtlasTestScriptsRoot 'Tweaks\qol\taskbar\search-icon.psd1')).Registry
         } else {
             $definition = Import-PowerShellDataFile (Join-Path $script:AtlasTestRepoRoot 'package\Executables\AtlasModules\Toggles\General\WebSearch.psd1')
             $stateName = if ($Route -eq 'Enable Web Search') { 'Enable' } else { 'Disable' }
@@ -88,8 +88,9 @@ Describe 'Search privacy on Windows that refuses per-user preferences' {
             $Level -eq 'Warning' -and $Message -match 'Continuing without'
         }
         # The machine policy that turns off web results still follows the route.
-        $present = $null -ne (Get-Item -LiteralPath $script:searchValues).GetValue('DisableSearchBoxSuggestions', $null)
-        $present | Should -Be ($Route -ne 'Enable Web Search')
+        $present = (Test-Path -LiteralPath $script:searchValues) -and
+            $null -ne (Get-Item -LiteralPath $script:searchValues).GetValue('DisableSearchBoxSuggestions', $null)
+        $present | Should -Be $Policy
     }
 
     It 'does not hide a failure to apply the required cloud-search policy' {
@@ -110,5 +111,43 @@ Describe 'Search privacy on Windows that refuses per-user preferences' {
             throw 'Unexpected registry failure'
         } -ParameterFilter { $Path -eq 'HKCU:\Software\AtlasRewriteTest\SearchPrivacy\SearchSettings' }
         { Invoke-AtlasRegistryEntries -Entries $entries -IsArm64 $false } | Should -Throw '*Unexpected registry failure*'
+    }
+}
+
+Describe 'Web Search and the taskbar search box' {
+    BeforeAll {
+        . (Join-Path $script:AtlasTestRepoRoot 'package\Executables\AtlasModules\Toggles\General\WebSearch.ps1')
+    }
+
+    BeforeEach {
+        Mock Invoke-AtlasRegistryEntries {}
+    }
+
+    It 'sets the search box to mode <Mode> when the <State> launcher runs' -ForEach @(
+        @{ State = 'Disable'; Function = 'Disable-AtlasWebSearchUser'; Mode = 1 }
+        @{ State = 'Enable'; Function = 'Set-AtlasWebSearchTaskbarMode'; Mode = 2 }
+    ) {
+        $toggle = [pscustomobject]@{ LauncherPath = "C:\Windows\AtlasDesktop\$State Web Search.cmd"; Silent = $true }
+
+        if ($Function -ceq 'Set-AtlasWebSearchTaskbarMode') { Set-AtlasWebSearchTaskbarMode -Toggle $toggle -Mode $Mode }
+        else { & $Function -Toggle $toggle }
+
+        Should -Invoke Invoke-AtlasRegistryEntries -Times 1 -Exactly -ParameterFilter {
+            $Scope -ceq 'CurrentUser' -and @($Entries).Count -eq 1 -and $Entries[0].Name -ceq 'SearchboxTaskbarMode' -and
+            $Entries[0].Data -eq $Mode -and $Entries[0].AllowOsProtected
+        }
+    }
+
+    It 'leaves the search box alone when an update or first sign-in replays the choice' {
+        Disable-AtlasWebSearchUser -Toggle ([pscustomobject]@{ LauncherPath = $null; Silent = $true })
+        Set-AtlasWebSearchTaskbarMode -Toggle ([pscustomobject]@{ LauncherPath = ''; Silent = $true }) -Mode 2
+
+        Should -Invoke Invoke-AtlasRegistryEntries -Times 0 -Exactly
+    }
+
+    It 'shows the search box for Enable before it installs the Bing provider' {
+        $companion = Get-Content -LiteralPath (Join-Path $script:AtlasTestRepoRoot 'package\Executables\AtlasModules\Toggles\General\WebSearch.ps1') -Raw
+        $enable = [regex]::Match($companion, '(?s)function Enable-AtlasWebSearchUser \{.*?\n\}').Value
+        $enable | Should -Match 'Set-AtlasWebSearchTaskbarMode -Toggle \$Toggle -Mode 2'
     }
 }

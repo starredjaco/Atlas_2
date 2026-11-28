@@ -40,6 +40,7 @@ The document is all a resume needs, so Atlas keeps no other record of an install
 | `mode` | `Fresh`, `Upgrade`, `Reapply` or `Rebase` |
 | `options` | The options the install applies |
 | `choices` | The update path: `Keep` or `ChooseAgain` |
+| `fromVersion` | The Atlas version an update or reinstall starts from, which decides the preference tweaks it applies; absent on a fresh install |
 | `userSid`, `userSessionId` | The installing user, once Run has bound them |
 | `captureNonce` | The value the installing user's marker must carry |
 | `completedSteps` | The plan keys that have finished |
@@ -220,9 +221,11 @@ An update or reinstall changes other accounts' ordinary settings when each perso
 - At sign-in, `Entry/Update-AtlasUser.ps1` runs once for each stamp and records it as `UpgradeVersion` under `HKCU\SOFTWARE\AtlasOS\UserSetup`.
   A failed migration doesn't record the stamp, so it runs again at the next sign-in.
 - The installing user's own pass records the stamp too, so their next sign-in doesn't run it again.
+- The machine Run value `AtlasUserUpgrade` starts the migration at sign-in. An update registers it only when the PC has another account, and removes it otherwise.
 
 Each migration writes a transcript to that account's `%LOCALAPPDATA%\AtlasOS\Logs`.
 It applies ordinary user settings and replays the user part of each recorded toggle, but not protected policy roots.
+Preference tweaks (`OnUpgrade = 'Once'`) go by the account's `UpgradeVersion`, or, for an account no update has reached yet, the version the PC had before the update, from the machine state document's history.
 
 ## Old Atlas Toolbox records
 

@@ -95,8 +95,9 @@ The machine pass applies the action keys in this order: `Registry`, `Services`, 
 | `Option` | string | Apply only when the user chose this option; see [Options](#options). |
 | `Arch` | `'X64'` or `'ARM64'` | Apply only on this architecture. |
 | `MinBuild` / `MaxBuild` | integer | Apply only within this Windows build range, inclusive. |
-| `OnUpgrade` | `'Both'` (default), `'Skip'` or `'Only'` | The install modes that run the tweak; see [Install modes](#install-modes). |
+| `OnUpgrade` | `'Both'` (default), `'Skip'`, `'Only'` or `'Once'` | The install modes that run the tweak; see [Install modes](#install-modes). |
 | `OnRebase` | `'Run'` | With `OnUpgrade = 'Skip'`, also run on Rebase installs. |
+| `Since` | `'major.minor.patch'` | With `OnUpgrade = 'Once'`, the Atlas version that first included the tweak. |
 | `RunAs` | `'User'` | Run the companion `Script` as the install user; see [Companion scripts](#companion-scripts). |
 | `Registry` | array of hashtables | Registry operations; see [Registry entries](#registry-entries). |
 | `PostUserRegistryRefresh` | string | A shell refresh after the live `HKCU` pass; see [Shell refresh](#shell-refresh). |
@@ -121,6 +122,10 @@ When an update chooses again, the Choices step applies it and undoes Atlas's ear
 - `Skip` runs it on fresh installs only.
   Upgrade, Reapply and Rebase installs skip it, unless `OnRebase = 'Run'` adds Rebase.
 - `Only` runs it on Upgrade, Reapply and Rebase installs, and never on fresh installs.
+- `Once` runs it on fresh installs, and on an Upgrade, Reapply or Rebase only when the version the install starts from is older than `Since`.
+  Use it for a preference people can change themselves, such as taskbar or File Explorer settings, so an update doesn't undo their change.
+  Each account that Atlas brings up to date at sign-in goes by the version it last had.
+  Raise `Since` to the new release's version when a changed default should reach PCs that update to it.
 
 A Rebase install puts Atlas back on a Windows that rebuilt itself while Atlas Manager moved it to a newer release.
 Leave `OnRebase` out of tweaks that would overwrite the user's own layout, theme, file associations or settings.

@@ -1,7 +1,7 @@
 # Atlas.Tweaks domain: tweak schema validation (used by CI and locally before builds).
 
 $script:AtlasTweakTopLevelKeys = @(
-    'Name', 'Description', 'Option', 'Arch', 'OnUpgrade', 'OnRebase', 'RunAs', 'MinBuild', 'MaxBuild',
+    'Name', 'Description', 'Option', 'Arch', 'OnUpgrade', 'OnRebase', 'Since', 'RunAs', 'MinBuild', 'MaxBuild',
     'Registry', 'PostUserRegistryRefresh', 'Services', 'ScheduledTasks', 'Toggle', 'Run', 'RemovePaths', 'Script'
 )
 
@@ -118,12 +118,27 @@ function Test-AtlasTweakFileSchema {
         Add-Problem -Problem "'Arch' must be 'X64' or 'ARM64', got '$($tweak['Arch'])'."
     }
 
-    if ($tweak.ContainsKey('OnUpgrade') -and $tweak['OnUpgrade'] -notin @('Skip', 'Only', 'Both')) {
-        Add-Problem -Problem "'OnUpgrade' must be 'Skip', 'Only' or 'Both', got '$($tweak['OnUpgrade'])'."
+    if ($tweak.ContainsKey('OnUpgrade') -and $tweak['OnUpgrade'] -notin @('Skip', 'Only', 'Both', 'Once')) {
+        Add-Problem -Problem "'OnUpgrade' must be 'Skip', 'Only', 'Both' or 'Once', got '$($tweak['OnUpgrade'])'."
     }
 
     if ($tweak.ContainsKey('OnRebase') -and ($tweak['OnRebase'] -cne 'Run' -or [string]$tweak['OnUpgrade'] -cne 'Skip')) {
         Add-Problem -Problem "'OnRebase' must be 'Run', on a tweak with OnUpgrade = 'Skip'."
+    }
+
+    # Since names the release that first included a preference tweak, so an update
+    # applies it only when it starts from an earlier release.
+    $once = $tweak.ContainsKey('OnUpgrade') -and [string]$tweak['OnUpgrade'] -eq 'Once'
+    if ($once -and -not $tweak.ContainsKey('Since')) {
+        Add-Problem -Problem "A tweak with OnUpgrade = 'Once' needs 'Since', the Atlas version that first included it."
+    }
+    if ($tweak.ContainsKey('Since')) {
+        if (-not $once) {
+            Add-Problem -Problem "'Since' applies only to a tweak with OnUpgrade = 'Once'."
+        }
+        if ($tweak['Since'] -isnot [string] -or [string]$tweak['Since'] -cnotmatch '^\d+\.\d+\.\d+$') {
+            Add-Problem -Problem "'Since' must be an Atlas version such as '0.6.0', got '$($tweak['Since'])'."
+        }
     }
 
 

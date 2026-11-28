@@ -13,7 +13,8 @@ BeforeAll {
             [bool]$IsUpgrade = $false,
             [int]$WindowsBuild = 26100,
             [bool]$IsInstallStateBacked = $false,
-            [string]$InteractiveUserSid = 'S-1-5-21-1-2-3-1001'
+            [string]$InteractiveUserSid = 'S-1-5-21-1-2-3-1001',
+            [AllowNull()][string]$FromVersion = $null
         )
 
         [pscustomobject]@{
@@ -26,6 +27,7 @@ BeforeAll {
             IsUpgrade        = $IsUpgrade
             IsInstallStateBacked = $IsInstallStateBacked
             InteractiveUserSid = $InteractiveUserSid
+            FromVersion      = $FromVersion
         }
     }
 }
@@ -161,6 +163,28 @@ Describe 'Test-AtlasTweakSchema' {
         $problemText | Should -Match "Run entry 'Wait' can only be"
         $problemText | Should -Match "RemovePaths entry 'IgnoreErrors' must be a boolean"
         $problemText | Should -Match 'does not exist next to the tweak file'
+    }
+
+    It 'reports <Case>' -ForEach @(
+        @{ Case = 'Once without Since'; Keys = "OnUpgrade = 'Once'"; Problem = "needs 'Since'" }
+        @{ Case = 'Since without Once'; Keys = "OnUpgrade = 'Skip'; Since = '0.6.0'"; Problem = "'Since' applies only" }
+        @{ Case = 'a Since that is not a version'; Keys = "OnUpgrade = 'Once'; Since = '0.6'"; Problem = "'Since' must be an Atlas version" }
+    ) {
+        $tweakFile = Join-Path -Path $TestDrive -ChildPath "once-$([guid]::NewGuid().ToString('N')).psd1"
+        "@{ Name = 'Preference'; $Keys; Registry = @(@{ Path = 'HKCU\Software\AtlasRewriteTest'; Name = 'Value'; Type = 'DWord'; Data = 1 }) }" |
+            Set-Content -Path $tweakFile
+
+        $problems = @(Test-AtlasTweakSchema -Path $tweakFile)
+
+        (@($problems | ForEach-Object { $_.Problem }) -join "`n") | Should -Match ([regex]::Escape($Problem))
+    }
+
+    It 'accepts a preference with OnUpgrade Once and its Since version' {
+        $tweakFile = Join-Path -Path $TestDrive -ChildPath 'once-valid.psd1'
+        "@{ Name = 'Preference'; OnUpgrade = 'Once'; Since = '0.6.3'; Registry = @(@{ Path = 'HKCU\Software\AtlasRewriteTest'; Name = 'Value'; Type = 'DWord'; Data = 1 }) }" |
+            Set-Content -Path $tweakFile
+
+        @(Test-AtlasTweakSchema -Path $tweakFile) | Should -HaveCount 0
     }
 
     It 'reports a file that does not parse as a data file' {
@@ -342,6 +366,46 @@ Describe 'Test-AtlasTweakApplicable' {
         Test-AtlasTweakApplicable -Tweak $tweak -Context (New-TestContextMock) | Should -Be $Fresh
         Test-AtlasTweakApplicable -Tweak $tweak -Context (New-TestContextMock -IsUpgrade $true) | Should -Be $Upgrade
         Test-AtlasTweakApplicable -Tweak $tweak -Context $rebaseContext | Should -Be $Rebase
+    }
+
+    # A preference applies on fresh installs and on the update that first includes it.
+    It 'gates OnUpgrade Once on an update from <From>: <Applies>' -ForEach @(
+        @{ From = '0.6.1'; Applies = $true }
+        @{ From = '0.5.0'; Applies = $true }
+        @{ From = '0.6.2'; Applies = $false }
+        @{ From = '0.6.3'; Applies = $false }
+        @{ From = '0.6.2-rc.1'; Applies = $false }
+        @{ From = '0.6.2+3f2504e0-4f89-41d3-9a0c-0305e82c3301'; Applies = $false }
+        @{ From = ''; Applies = $false }
+        @{ From = 'not a version'; Applies = $false }
+    ) {
+        $tweak = @{ Name = 'T'; OnUpgrade = 'Once'; Since = '0.6.2' }
+        $update = New-TestContextMock -IsUpgrade $true -FromVersion $From
+
+        Test-AtlasTweakApplicable -Tweak $tweak -Context (New-TestContextMock) | Should -BeTrue
+        Test-AtlasTweakApplicable -Tweak $tweak -Context $update | Should -Be $Applies
+    }
+
+    It 'says why an update leaves a preference alone' {
+        $tweak = @{ Name = 'T'; OnUpgrade = 'Once'; Since = '0.4.1' }
+        # A context from before FromVersion existed counts as unknown too.
+        $legacy = New-TestContextMock -IsUpgrade $true
+        $legacy.PSObject.Properties.Remove('FromVersion')
+        $contexts = @(
+            (New-TestContextMock -IsUpgrade $true -FromVersion '0.6.1')
+            (New-TestContextMock -IsUpgrade $true)
+            $legacy
+        )
+
+        $reasons = @(InModuleScope Atlas.Tweaks -Parameters @{ Tweak = $tweak; Contexts = $contexts } {
+                param($Tweak, $Contexts)
+                foreach ($context in $Contexts) { Get-AtlasTweakSkipReason -Tweak $Tweak -Context $context }
+            })
+
+        $reasons | Should -HaveCount 3
+        $reasons[0] | Should -BeLike '*applied once*0.6.1 already included*'
+        $reasons[1] | Should -BeLike '*applied once*unknown*'
+        $reasons[2] | Should -BeLike '*unknown*'
     }
 
     It 'gates on MinBuild inclusively (legacy builds: [>=N])' {

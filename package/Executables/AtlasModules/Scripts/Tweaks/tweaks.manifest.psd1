@@ -132,6 +132,7 @@
                 'taskbar/hide-task-view'
                 'taskbar/disable-copilot'
                 'taskbar/set-to-left'
+                'taskbar/search-icon'
                 'taskbar/end-task'
                 'explorer/always-more-details-transfer'
                 'explorer/disable-invalid-shortcuts-search'

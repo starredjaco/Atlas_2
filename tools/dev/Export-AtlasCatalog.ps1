@@ -295,6 +295,7 @@ function Get-TweakCatalogEntry {
         arch        = [string](Get-OptionalValue -Table $tweak -Key 'Arch' -Default '')
         onUpgrade   = [string](Get-OptionalValue -Table $tweak -Key 'OnUpgrade' -Default 'Both')
         onRebase    = [string](Get-OptionalValue -Table $tweak -Key 'OnRebase' -Default '')
+        since       = [string](Get-OptionalValue -Table $tweak -Key 'Since' -Default '')
         minBuild    = Get-OptionalValue -Table $tweak -Key 'MinBuild'
         maxBuild    = Get-OptionalValue -Table $tweak -Key 'MaxBuild'
         work        = $work.ToArray()
@@ -395,6 +396,9 @@ function Get-TweakCondition {
         else {
             $conditions.Add("$(Join-WordList -Words $effective) installs only")
         }
+    }
+    if ($Tweak.onUpgrade -ceq 'Once') {
+        $conditions.Add("Once: fresh installs, and updates from Atlas versions before $($Tweak.since)")
     }
 
     if ($null -ne $Tweak.minBuild) { $conditions.Add("Windows build $($Tweak.minBuild) or later") }
@@ -522,6 +526,7 @@ function ConvertTo-TweakMarkdown {
     $lines.Add('  "Only with option `x`" needs that choice in Atlas Manager.')
     $lines.Add('  "Fresh installs only" comes from `OnUpgrade = ''Skip''`, and "Fresh and Rebase installs only" adds `OnRebase = ''Run''`.')
     $lines.Add('  "Not on fresh installs" comes from `OnUpgrade = ''Only''`.')
+    $lines.Add('  "Once" comes from `OnUpgrade = ''Once''` and `Since`: a preference that applies on fresh installs and on the update that first includes it, then stays the user''s.')
     $lines.Add('  "ARM64 only" and "x64 only" come from `Arch`, and the Windows build conditions from `MinBuild` and `MaxBuild`.')
     $lines.Add('- **Work** lists the keys the definition declares, in the order the install applies them.')
     $lines.Add('  A number counts entries, so `Registry 3` is three registry entries, and `Toggle` names the toggle state the tweak applies and records.')

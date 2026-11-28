@@ -211,8 +211,10 @@ function Invoke-AtlasInstallCapture {
         $options = Assert-AtlasInstallOptionSet -Options @($kept.Options) -Groups $groups
     }
 
+    # Where an update starts decides the preference tweaks it applies (OnUpgrade = 'Once').
+    $fromVersion = if ($mode -cne 'Fresh') { Get-AtlasInstalledVersion } else { $null }
     $null = Start-AtlasInstallState -TargetVersion $targetVersion -Mode $mode -Choices $updatePath.Choices `
-        -CaptureNonce ([guid]::NewGuid().ToString('D'))
+        -FromVersion $fromVersion -CaptureNonce ([guid]::NewGuid().ToString('D'))
     Set-AtlasInstallOptions -Options $options | Out-Null
     return "Atlas install state ready for $mode of $targetVersion with options: $($options -join ', ')."
 }

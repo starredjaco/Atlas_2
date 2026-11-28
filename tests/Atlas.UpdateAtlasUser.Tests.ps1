@@ -19,6 +19,7 @@ BeforeAll {
             LocalAppData = Join-Path $root 'LocalAppData'
             Modules      = Join-Path $root 'AtlasModules'
             Inherited    = Join-Path $root 'inherited-modules'
+            StateDocument = Join-Path $root 'state.json'
             MarkerPath   = "$sandbox\UserSetup"
             EligiblePath = "$sandbox\UpgradeUsers"
         }
@@ -41,7 +42,7 @@ function Test-AtlasSystem { $false }
 function Test-AtlasAdmin { $false }
 function Get-AtlasContext {
     param([switch]$Refresh)
-    [pscustomobject]@{ IsUpgrade = $false; IsInstallStateBacked = $true; TargetVersion = '0.6.0'; InstalledVersion = '0.5.0'; AtlasModulesPath = $env:ATLAS_TEST_MODULES_PATH }
+    [pscustomobject]@{ IsUpgrade = $false; IsInstallStateBacked = $true; TargetVersion = '0.6.0'; InstalledVersion = '0.5.0'; AtlasModulesPath = $env:ATLAS_TEST_MODULES_PATH; StateDocumentPath = $env:ATLAS_TEST_STATE_DOCUMENT }
 }
 '@
             'Atlas.Registry' = @'
@@ -59,6 +60,7 @@ function Get-AtlasTweakManifest {
 function Invoke-AtlasTweakCategory {
     param([string]$Name, [string]$RegistryScope, [switch]$RegistryOnly, $Context)
     Add-Content -LiteralPath $env:ATLAS_TEST_CALL_LOG -Value "Category:${Name}:$RegistryScope"
+    Add-Content -LiteralPath $env:ATLAS_TEST_CALL_LOG -Value "From:${Name}:$($Context.FromVersion)"
 }
 '@
             'Atlas.Toggles'  = @'
@@ -96,6 +98,7 @@ function Join-Path { [Console]::Out.WriteLine('SHADOWED'); throw 'A shadowing Jo
             $env:LOCALAPPDATA = $Fixture.LocalAppData
             $env:ATLAS_TEST_CALL_LOG = $Fixture.CallLog
             $env:ATLAS_TEST_MODULES_PATH = $Fixture.Modules
+            $env:ATLAS_TEST_STATE_DOCUMENT = $Fixture.StateDocument
             $ErrorActionPreference = 'Continue'
             $output = & $script:PowerShell51 -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $Fixture.Entry @Arguments 2>&1
             [pscustomobject]@{
@@ -107,7 +110,7 @@ function Join-Path { [Console]::Out.WriteLine('SHADOWED'); throw 'A shadowing Jo
         finally {
             $env:PSModulePath = $saved.PSModulePath
             $env:LOCALAPPDATA = $saved.LOCALAPPDATA
-            Remove-Item -Path Env:\ATLAS_TEST_CALL_LOG, Env:\ATLAS_TEST_MODULES_PATH -ErrorAction SilentlyContinue
+            Remove-Item -Path Env:\ATLAS_TEST_CALL_LOG, Env:\ATLAS_TEST_MODULES_PATH, Env:\ATLAS_TEST_STATE_DOCUMENT -ErrorAction SilentlyContinue
             $ErrorActionPreference = $previousPreference
         }
     }
@@ -191,6 +194,26 @@ Describe 'User upgrade entry' {
         $logon.Calls | Should -Not -Contain 'ToggleReapply'
     }
 
+    It 'gives the preference tweaks the version this account last had: <Case>' -ForEach @(
+        @{ Case = 'its last update'; Marker = '0.5.0'; Stamp = '0.6.0'; History = @(); Expected = '0.5.0' }
+        @{ Case = 'a reinstall after its update'; Marker = '0.6.0'; Stamp = '0.6.0+3f2504e0-4f89-41d3-9a0c-0305e82c3301'; History = @(); Expected = '0.6.0' }
+        @{ Case = 'the PC''s version before this update'; Marker = $null; Stamp = '0.6.0'; History = @('0.4.1', '0.5.0', '0.6.0'); Expected = '0.5.0' }
+        @{ Case = 'unknown'; Marker = $null; Stamp = '0.6.0'; History = @('0.6.0'); Expected = '' }
+    ) {
+        $fixture = New-UpdateUserFixture
+        Set-ItemProperty -LiteralPath $fixture.EligiblePath -Name $script:CurrentSid -Value $Stamp -Type String
+        if ($null -ne $Marker) {
+            Set-ItemProperty -LiteralPath $fixture.MarkerPath -Name UpgradeVersion -Value $Marker -Type String
+        }
+        $document = [pscustomobject]@{ installedVersion = '0.6.0'; history = @($History | ForEach-Object { [pscustomobject]@{ version = $_; mode = 'Upgrade' } }) }
+        Set-Content -LiteralPath $fixture.StateDocument -Value ($document | ConvertTo-Json -Depth 4)
+
+        $result = Invoke-UpdateUserFixture -Fixture $fixture
+
+        $result.ExitCode | Should -Be 0 -Because $result.Output
+        @($result.Calls -like 'From:*') | Should -Be @("From:privacy:$Expected", "From:qol:$Expected")
+    }
+
     It 'takes an eligibility value that isn''t text as the installed version' {
         $fixture = New-UpdateUserFixture
         Set-ItemProperty -LiteralPath $fixture.EligiblePath -Name $script:CurrentSid -Value 1 -Type DWord
@@ -208,6 +231,53 @@ Describe 'User upgrade entry' {
 
         $result.Output | Should -Not -Match 'SHADOWED'
         $result.Calls | Should -Contain 'Join-Path:Microsoft.PowerShell.Management'
+    }
+}
+
+Describe 'AtlasUserUpgrade sign-in entry' {
+    BeforeAll {
+        $script:RegisterScript = Join-Path $script:AtlasTestScriptsRoot 'Tweaks\misc\register-user-upgrade.ps1'
+        # Stand-ins for the install's own helpers, which the tweak engine provides.
+        function Get-AtlasContext { [pscustomobject]@{ InteractiveUserSid = 'S-1-5-21-1-2-3-1001' } }
+        function Set-AtlasRegistryValue { param($Path, $Name, $Type, $Data) $null = $Path, $Name, $Type, $Data }
+        function Remove-AtlasRegistryValue { param($Path, $Name) $null = $Path, $Name }
+        function Write-AtlasLog { param($Message) $null = $Message }
+    }
+
+    BeforeEach {
+        Mock Set-AtlasRegistryValue {}
+        Mock Remove-AtlasRegistryValue {}
+        Mock Write-AtlasLog {}
+    }
+
+    It 'removes the entry when the installing account is the only one' {
+        Mock Get-ChildItem {
+            @('S-1-5-18', 'S-1-5-19', 'S-1-5-21-1-2-3-1001') | ForEach-Object { [pscustomobject]@{ PSChildName = $_ } }
+        } -ParameterFilter { $LiteralPath -like '*\ProfileList' }
+
+        & $script:RegisterScript
+
+        Should -Invoke Remove-AtlasRegistryValue -Times 1 -Exactly -ParameterFilter {
+            $Path -ceq 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -and $Name -ceq 'AtlasUserUpgrade'
+        }
+        Should -Invoke Set-AtlasRegistryValue -Times 0 -Exactly
+    }
+
+    It 'registers the entry when <Case> has an account too' -ForEach @(
+        @{ Case = 'another local person'; Sid = 'S-1-5-21-1-2-3-1002' }
+        @{ Case = 'a Microsoft Entra user'; Sid = 'S-1-12-1-4-5-6-7' }
+    ) {
+        Mock Get-ChildItem {
+            @('S-1-5-18', 'S-1-5-21-1-2-3-1001', $Sid) | ForEach-Object { [pscustomobject]@{ PSChildName = $_ } }
+        } -ParameterFilter { $LiteralPath -like '*\ProfileList' }
+
+        & $script:RegisterScript
+
+        Should -Invoke Set-AtlasRegistryValue -Times 1 -Exactly -ParameterFilter {
+            $Name -ceq 'AtlasUserUpgrade' -and $Type -ceq 'ExpandString' -and
+            $Data -like '"%windir%\System32\wscript.exe" "%windir%\AtlasModules\Scripts\Entry\Invoke-AtlasUserUpgradeHidden.vbs"'
+        }
+        Should -Invoke Remove-AtlasRegistryValue -Times 0 -Exactly
     }
 }
 

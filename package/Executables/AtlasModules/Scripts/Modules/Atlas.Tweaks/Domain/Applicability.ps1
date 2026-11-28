@@ -1,4 +1,22 @@
-# Atlas.Tweaks domain: tweak gating (Option / Arch / OnUpgrade / OnRebase / MinBuild / MaxBuild).
+# Atlas.Tweaks domain: tweak gating (Option / Arch / OnUpgrade / OnRebase / Since / MinBuild / MaxBuild).
+
+function ConvertTo-AtlasTweakVersion {
+    <#
+    .SYNOPSIS
+        Returns the major.minor.patch part of an Atlas version as a [version], ignoring
+        a pre-release or build suffix, or $null when the text isn't a version.
+    #>
+    param([AllowNull()][string]$Value)
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        return $null
+    }
+    $match = [regex]::Match($Value.Trim(), '^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$')
+    if (-not $match.Success) {
+        return $null
+    }
+    return [version]::new([int]$match.Groups[1].Value, [int]$match.Groups[2].Value, [int]$match.Groups[3].Value)
+}
 
 function Get-AtlasTweakSkipReason {
     <#
@@ -57,6 +75,23 @@ function Get-AtlasTweakSkipReason {
     if ($onUpgrade -eq 'Only' -and -not $context.IsUpgrade) {
         return 'runs only on upgrade installs'
     }
+    # A preference applies once: on a fresh install, or on the update that first
+    # includes it. After that the setting is the user's, and later updates leave it.
+    if ($onUpgrade -eq 'Once' -and $context.IsUpgrade) {
+        $since = ConvertTo-AtlasTweakVersion -Value ([string]$Tweak['Since'])
+        $fromProperty = $context.PSObject.Properties['FromVersion']
+        $fromText = if ($null -ne $fromProperty) { [string]$fromProperty.Value } else { '' }
+        $from = ConvertTo-AtlasTweakVersion -Value $fromText
+        if ($null -eq $since) {
+            return "its Since version '$($Tweak['Since'])' isn't an Atlas version"
+        }
+        if ($null -eq $from) {
+            return 'a preference applied once, and the Atlas version this update starts from is unknown'
+        }
+        if ($from -ge $since) {
+            return "a preference applied once, which Atlas $fromText already included"
+        }
+    }
 
 
     # Windows build gating (inclusive). A build of 0 means the number could not be read;
@@ -77,7 +112,7 @@ function Test-AtlasTweakApplicable {
     <#
     .SYNOPSIS
         Returns whether a tweak (loaded from its .psd1) applies to the current install
-        context, evaluating its Option, Arch, OnUpgrade/OnRebase and MinBuild/MaxBuild gates.
+        context, evaluating its Option, Arch, OnUpgrade/OnRebase/Since and MinBuild/MaxBuild gates.
     #>
     param(
         [Parameter(Mandatory = $true)]
