@@ -234,6 +234,53 @@ Describe 'User upgrade entry' {
     }
 }
 
+Describe 'AtlasUserUpgrade sign-in entry' {
+    BeforeAll {
+        $script:RegisterScript = Join-Path $script:AtlasTestScriptsRoot 'Tweaks\misc\register-user-upgrade.ps1'
+        # Stand-ins for the install's own helpers, which the tweak engine provides.
+        function Get-AtlasContext { [pscustomobject]@{ InteractiveUserSid = 'S-1-5-21-1-2-3-1001' } }
+        function Set-AtlasRegistryValue { param($Path, $Name, $Type, $Data) $null = $Path, $Name, $Type, $Data }
+        function Remove-AtlasRegistryValue { param($Path, $Name) $null = $Path, $Name }
+        function Write-AtlasLog { param($Message) $null = $Message }
+    }
+
+    BeforeEach {
+        Mock Set-AtlasRegistryValue {}
+        Mock Remove-AtlasRegistryValue {}
+        Mock Write-AtlasLog {}
+    }
+
+    It 'removes the entry when the installing account is the only one' {
+        Mock Get-ChildItem {
+            @('S-1-5-18', 'S-1-5-19', 'S-1-5-21-1-2-3-1001') | ForEach-Object { [pscustomobject]@{ PSChildName = $_ } }
+        } -ParameterFilter { $LiteralPath -like '*\ProfileList' }
+
+        & $script:RegisterScript
+
+        Should -Invoke Remove-AtlasRegistryValue -Times 1 -Exactly -ParameterFilter {
+            $Path -ceq 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -and $Name -ceq 'AtlasUserUpgrade'
+        }
+        Should -Invoke Set-AtlasRegistryValue -Times 0 -Exactly
+    }
+
+    It 'registers the entry when <Case> has an account too' -ForEach @(
+        @{ Case = 'another local person'; Sid = 'S-1-5-21-1-2-3-1002' }
+        @{ Case = 'a Microsoft Entra user'; Sid = 'S-1-12-1-4-5-6-7' }
+    ) {
+        Mock Get-ChildItem {
+            @('S-1-5-18', 'S-1-5-21-1-2-3-1001', $Sid) | ForEach-Object { [pscustomobject]@{ PSChildName = $_ } }
+        } -ParameterFilter { $LiteralPath -like '*\ProfileList' }
+
+        & $script:RegisterScript
+
+        Should -Invoke Set-AtlasRegistryValue -Times 1 -Exactly -ParameterFilter {
+            $Name -ceq 'AtlasUserUpgrade' -and $Type -ceq 'ExpandString' -and
+            $Data -like '"%windir%\System32\wscript.exe" "%windir%\AtlasModules\Scripts\Entry\Invoke-AtlasUserUpgradeHidden.vbs"'
+        }
+        Should -Invoke Remove-AtlasRegistryValue -Times 0 -Exactly
+    }
+}
+
 Describe 'Set-AtlasUpgradeUserStamp' {
     BeforeAll {
         . (Join-Path $script:AtlasTestScriptsRoot 'Install\Tasks\Set-AtlasUpgradeUsers.ps1')

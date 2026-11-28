@@ -175,6 +175,7 @@ When several people use the PC, each with their own account, the install reaches
   Your ordinary settings change under your own non-elevated account during the install, and the install's privileged part handles your protected user policies.
 - **Other existing accounts.**
   Each is registered for a one-time migration of ordinary user settings, which runs when that person next signs in.
+  On a PC with only your account, nothing is registered to run at sign-in.
   A reinstall of the same version registers them again.
   A failed migration runs again at the next sign-in.
   The sign-in migration doesn't change protected policies, so those accounts can keep older protected user policies.

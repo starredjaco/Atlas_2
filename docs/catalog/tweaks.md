@@ -253,7 +253,7 @@ Install modes: Fresh, Upgrade, Reapply and Rebase.
 | `rebuild-perf-counters`<br>Rebuild Performance Counters | Attempts to rebuild the performance counters that monitoring tools rely on and logs a warning if Windows cannot complete the repair. | | Run 3 |
 | `make-measuresleep-admin`<br>Make MeasureSleep Run as Administrator | Makes the MeasureSleep tool in the Timer Resolution folder always run as administrator, which it needs. | | Script `make-measuresleep-admin.ps1` |
 | `add-newUser-script`<br>Add Initialize-NewUser.ps1 script | Adds Initialize-NewUser.ps1 to RunOnce for new accounts, so each one gets the per-user Atlas settings at first sign-in. | | Registry 3, Script `add-newUser-script.ps1` |
-| `register-user-upgrade`<br>Register user upgrade migration | Updates existing accounts to the installed version at their next sign-in, keeping their desktop layout. | Not on fresh installs | Registry 1 |
+| `register-user-upgrade`<br>Register user upgrade migration | Updates the other accounts to the installed version at their next sign-in, keeping their desktop layout. On a PC with no other account, it removes the sign-in entry instead. | Not on fresh installs | Script `register-user-upgrade.ps1` |
 | `config-oem-information`<br>Configure OEM Information | Sets the OEM information in Settings to show the Atlas version and the Atlas Discord server. | | Registry 3, Script `config-oem-information.ps1` |
 | `create-shortcuts`<br>Create Shortcuts | Creates the Atlas desktop and Start menu shortcuts. | | Script `create-shortcuts.ps1` |
 

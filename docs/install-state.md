@@ -221,6 +221,7 @@ An update or reinstall changes other accounts' ordinary settings when each perso
 - At sign-in, `Entry/Update-AtlasUser.ps1` runs once for each stamp and records it as `UpgradeVersion` under `HKCU\SOFTWARE\AtlasOS\UserSetup`.
   A failed migration doesn't record the stamp, so it runs again at the next sign-in.
 - The installing user's own pass records the stamp too, so their next sign-in doesn't run it again.
+- The machine Run value `AtlasUserUpgrade` starts the migration at sign-in. An update registers it only when the PC has another account, and removes it otherwise.
 
 Each migration writes a transcript to that account's `%LOCALAPPDATA%\AtlasOS\Logs`.
 It applies ordinary user settings and replays the user part of each recorded toggle, but not protected policy roots.
