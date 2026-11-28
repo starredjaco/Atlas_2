@@ -26,6 +26,10 @@ Every update replaces the Atlas folder and modules in `%windir%\AtlasModules`, k
 It runs the current tweaks, apart from those marked as fresh-install only (`OnUpgrade = 'Skip'`).
 It then applies your recorded toggle choices again with the new release's definitions, and they win over any tweak default they overlap.
 
+Preferences you can change yourself apply once (`OnUpgrade = 'Once'`), such as the taskbar's alignment and search box, File Explorer's view options, mouse acceleration and visual effects.
+A fresh install sets them, and so does the one update that first includes a new one, but later updates leave them as you set them.
+Replaying the Web Search choice leaves the taskbar search box as it is; only running its launcher changes it.
+
 For a toggle with no recorded choice, the update adopts one only when your registry values point to exactly one of its states, and that state only sets registry values.
 A state that also changes services or runs actions isn't adopted, because its values can match Windows's own defaults.
 So Atlas can't recover every customisation it doesn't recognise.
@@ -35,7 +39,7 @@ Other power plans don't count as a choice, and the update leaves them alone.
 
 ## What an update keeps
 
-An update keeps your Start and taskbar layouts, your file associations and the service backups from your first install.
+An update keeps your Start and taskbar layouts, your file associations, the preferences above and the service backups from your first install.
 It doesn't repeat the fresh-install service, component and app removal steps, so an established PC isn't treated as a clean Windows installation.
 
 What happens to your install choices depends on the way you update, described next.

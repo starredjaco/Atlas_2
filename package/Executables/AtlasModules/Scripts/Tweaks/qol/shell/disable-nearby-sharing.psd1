@@ -1,6 +1,8 @@
 @{
     Name        = 'Disable Shared Experiences'
     Description = 'Turns off Shared experiences and Nearby sharing, which share content with nearby devices.'
+    OnUpgrade   = 'Once'
+    Since       = '0.4.1'
     Registry    = @(
         # Microsoft does not document these values. Community source:
         # https://www.elevenforum.com/t/turn-on-or-off-nearby-sharing-in-windows-11.2644/

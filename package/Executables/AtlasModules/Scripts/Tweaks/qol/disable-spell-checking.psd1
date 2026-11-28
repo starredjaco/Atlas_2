@@ -1,6 +1,8 @@
 @{
     Name        = 'Disable Spell Checking'
     Description = 'Turns off spell checking, autocorrection, text suggestions and double-tap space for the touch keyboard.'
+    OnUpgrade   = 'Once'
+    Since       = '0.4.1'
     Registry    = @(
         @{ Path = 'HKCU\SOFTWARE\Microsoft\TabletTip\1.7'; Name = 'EnableAutocorrection'; Type = 'DWord'; Data = 0 }
         @{ Path = 'HKCU\SOFTWARE\Microsoft\TabletTip\1.7'; Name = 'EnableDoubleTapSpace'; Type = 'DWord'; Data = 0 }

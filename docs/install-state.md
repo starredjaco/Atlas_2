@@ -40,6 +40,7 @@ The document is all a resume needs, so Atlas keeps no other record of an install
 | `mode` | `Fresh`, `Upgrade`, `Reapply` or `Rebase` |
 | `options` | The options the install applies |
 | `choices` | The update path: `Keep` or `ChooseAgain` |
+| `fromVersion` | The Atlas version an update or reinstall starts from, which decides the preference tweaks it applies; absent on a fresh install |
 | `userSid`, `userSessionId` | The installing user, once Run has bound them |
 | `captureNonce` | The value the installing user's marker must carry |
 | `completedSteps` | The plan keys that have finished |
@@ -223,6 +224,7 @@ An update or reinstall changes other accounts' ordinary settings when each perso
 
 Each migration writes a transcript to that account's `%LOCALAPPDATA%\AtlasOS\Logs`.
 It applies ordinary user settings and replays the user part of each recorded toggle, but not protected policy roots.
+Preference tweaks (`OnUpgrade = 'Once'`) go by the account's `UpgradeVersion`, or, for an account no update has reached yet, the version the PC had before the update, from the machine state document's history.
 
 ## Old Atlas Toolbox records
 

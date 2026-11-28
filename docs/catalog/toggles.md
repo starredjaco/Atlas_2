@@ -474,8 +474,8 @@ Enable installs the Bing search provider through WinGet and, when search indexin
 
 | State | Value | Launcher | Restart | Work |
 | --- | --- | --- | --- | --- |
-| Disable | 0 | `3. General Configuration\Web Search (includes Search Highlights)\Disable Web Search (default).cmd` | RestartExplorer | Registry 13, MachineAction `Disable-AtlasWebSearchMachine` |
-| Enable | 1 | `3. General Configuration\Web Search (includes Search Highlights)\Enable Web Search.cmd` | RestartExplorer | Registry 12, MachineAction `Enable-AtlasWebSearchMachine`, UserAction `Enable-AtlasWebSearchUser` |
+| Disable | 0 | `3. General Configuration\Web Search (includes Search Highlights)\Disable Web Search (default).cmd` | RestartExplorer | Registry 12, MachineAction `Disable-AtlasWebSearchMachine`, UserAction `Disable-AtlasWebSearchUser` |
+| Enable | 1 | `3. General Configuration\Web Search (includes Search Highlights)\Enable Web Search.cmd` | RestartExplorer | Registry 11, MachineAction `Enable-AtlasWebSearchMachine`, UserAction `Enable-AtlasWebSearchUser` |
 
 ### Widgets
 

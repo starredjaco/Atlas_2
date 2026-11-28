@@ -1,6 +1,8 @@
 @{
     Name        = 'Disable Unnecessary Touch Keyboard Settings'
     Description = 'Turns off automatic capitalisation and key sounds on the touch keyboard.'
+    OnUpgrade   = 'Once'
+    Since       = '0.4.1'
     Registry    = @(
         @{ Path = 'HKCU\SOFTWARE\Microsoft\TabletTip\1.7'; Name = 'EnableAutoShiftEngage'; Type = 'DWord'; Data = 0 }
         @{ Path = 'HKCU\SOFTWARE\Microsoft\TabletTip\1.7'; Name = 'EnableKeyAudioFeedback'; Type = 'DWord'; Data = 0 }

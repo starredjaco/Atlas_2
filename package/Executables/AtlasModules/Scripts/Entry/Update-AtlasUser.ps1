@@ -11,6 +11,33 @@ if (-not [IO.File]::Exists($bootstrap)) { throw "The PowerShell bootstrap is mis
 . $bootstrap
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
+
+function Get-AtlasPreviousMachineVersion {
+    <#
+    .SYNOPSIS
+        The Atlas version the PC had before Version, from the machine state document's
+        install history, or $null when the history doesn't show one.
+    #>
+    param($Context, [string]$Version)
+
+    $pathProperty = $Context.PSObject.Properties['StateDocumentPath']
+    if ($null -eq $pathProperty -or -not [IO.File]::Exists([string]$pathProperty.Value)) { return $null }
+    try { $document = [IO.File]::ReadAllText([string]$pathProperty.Value) | ConvertFrom-Json -ErrorAction Stop }
+    catch { return $null }
+    $history = $document.PSObject.Properties['history']
+    if ($null -eq $history) { return $null }
+    $entries = @($history.Value)
+    for ($index = $entries.Count - 1; $index -ge 0; $index--) {
+        if ($null -eq $entries[$index]) { continue }
+        $entryVersion = $entries[$index].PSObject.Properties['version']
+        if ($null -ne $entryVersion -and -not [string]::IsNullOrWhiteSpace([string]$entryVersion.Value) -and
+            [string]$entryVersion.Value -cne $Version) {
+            return [string]$entryVersion.Value
+        }
+    }
+    return $null
+}
+
 $actualSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 # The install that last changed Atlas stamped this account (Set-AtlasUpgradeUserStamp).
 $eligible = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\AtlasOS\UpgradeUsers' -Name $actualSid -ErrorAction SilentlyContinue
@@ -45,6 +72,17 @@ try {
     # migrating at their next logon, under their own token, for every category in the
     # manifest Invoke-AtlasTweakCategory reads.
     if (-not $ExpectedUserSid) {
+        # Preference tweaks apply once, on the update that first includes them, so this
+        # account's own starting point decides them: the stamp its last update recorded,
+        # or, for an account no update has reached yet, the version the PC had before.
+        $fromVersion = $null
+        if ($null -ne $completed -and $completed.$markerName -is [string]) {
+            $fromVersion = ([string]$completed.$markerName).Split('+')[0]
+        }
+        if ([string]::IsNullOrWhiteSpace($fromVersion)) {
+            $fromVersion = Get-AtlasPreviousMachineVersion -Context $context -Version $version
+        }
+        $context | Add-Member -NotePropertyName FromVersion -NotePropertyValue $fromVersion -Force
         $manifest = Get-AtlasTweakManifest -Path (Join-Path $context.AtlasModulesPath 'Scripts\Tweaks\tweaks.manifest.psd1')
         foreach ($category in @($manifest['Categories'] | ForEach-Object { [string]$_['Name'] })) {
             Invoke-AtlasTweakCategory -Name $category -RegistryScope CurrentUser -RegistryOnly -Context $context

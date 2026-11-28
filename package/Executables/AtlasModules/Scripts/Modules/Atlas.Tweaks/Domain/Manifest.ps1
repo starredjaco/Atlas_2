@@ -198,6 +198,8 @@ function Test-AtlasTweakManifest {
                 'Skip' { $allowedModes = @('Fresh') }
                 'Only' { $allowedModes = @('Upgrade') }
                 'Both' { $allowedModes = @('Fresh', 'Upgrade') }
+                # Fresh installs, and the update that first includes it.
+                'Once' { $allowedModes = @('Fresh', 'Upgrade') }
                 default {
                     Add-ManifestProblem -Problem "Enabled tweak '$Slug' has invalid OnUpgrade '$($definition['OnUpgrade'])'."
                     return

@@ -97,16 +97,26 @@ BeforeAll {
     }
 
     # First sign-in writes the Web Search state's user values itself, so read them from
-    # the definition: its search-box mode, and its SearchSettings values that carry data.
+    # the toggle: the search-box mode its launcher sets, and the state's SearchSettings
+    # values that carry data.
     function Get-WebSearchUserState {
         param([Parameter(Mandatory = $true)][string]$State)
 
         $definition = Import-PowerShellDataFile -LiteralPath (Join-Path $script:AtlasTestScriptsRoot '..\Toggles\General\WebSearch.psd1')
         $registry = @(@($definition.States | Where-Object { $_.Name -ceq $State })[0].Registry)
-        $modes = @($registry | Where-Object { $_.Name -ceq 'SearchboxTaskbarMode' -and $_.ContainsKey('Data') })
-        $modes.Count | Should -Be 1
+        $companion = [Management.Automation.Language.Parser]::ParseFile(
+            (Join-Path $script:AtlasTestScriptsRoot '..\Toggles\General\WebSearch.ps1'), [ref]$null, [ref]$null)
+        $userFunction = "$State-AtlasWebSearchUser"
+        $function = $companion.Find({
+                param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -ceq $userFunction
+            }, $true)
+        $calls = @($function.FindAll({
+                    param($node) $node -is [Management.Automation.Language.CommandAst] -and
+                    $node.GetCommandName() -ceq 'Set-AtlasWebSearchTaskbarMode'
+                }, $true))
+        $calls.Count | Should -Be 1
         [pscustomobject]@{
-            Mode     = $modes[0].Data
+            Mode     = [int](Get-CommandParameterArgument -Command $calls[0] -Name 'Mode').Extent.Text
             Settings = @($registry | Where-Object { $_.Path -like '*\SearchSettings' -and $_.ContainsKey('Data') })
         }
     }

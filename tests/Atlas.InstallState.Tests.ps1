@@ -274,6 +274,49 @@ Describe 'Atlas.InstallState lifecycle' {
     }
 }
 
+Describe 'Atlas.InstallState starting version' {
+    It 'records the version an <Mode> starts from' -ForEach @(
+        @{ Mode = 'Upgrade' }
+        @{ Mode = 'Reapply' }
+        @{ Mode = 'Rebase' }
+    ) {
+        $path = New-TestInstallStatePath
+        (Start-AtlasInstallState -StatePath $path -TargetVersion '0.6.3' -Mode $Mode -FromVersion '0.6.2').fromVersion |
+            Should -BeExactly '0.6.2'
+        (Get-AtlasInstallState -StatePath $path).fromVersion | Should -BeExactly '0.6.2'
+    }
+
+    It 'records none for a fresh install, or when the PC names no version' {
+        $fresh = New-TestInstallStatePath
+        Start-AtlasInstallState -StatePath $fresh -TargetVersion '0.6.3' -Mode Fresh -FromVersion '0.6.2' | Out-Null
+        (Get-AtlasInstallState -StatePath $fresh).PSObject.Properties['fromVersion'] | Should -BeNullOrEmpty
+
+        $unknown = New-TestInstallStatePath
+        Start-AtlasInstallState -StatePath $unknown -TargetVersion '0.6.3' -Mode Upgrade | Out-Null
+        (Get-AtlasInstallState -StatePath $unknown).PSObject.Properties['fromVersion'] | Should -BeNullOrEmpty
+    }
+
+    It 'adds the starting version to a resumed run that never recorded it, and keeps one it did' {
+        $path = New-TestInstallStatePath
+        Start-AtlasInstallState -StatePath $path -TargetVersion '0.6.3' -Mode Upgrade | Out-Null
+        Start-AtlasInstallState -StatePath $path -TargetVersion '0.6.3' -Mode Upgrade -FromVersion '0.6.1' | Out-Null
+        (Get-AtlasInstallState -StatePath $path).fromVersion | Should -BeExactly '0.6.1'
+
+        Start-AtlasInstallState -StatePath $path -TargetVersion '0.6.3' -Mode Upgrade -FromVersion '0.6.2' | Out-Null
+        (Get-AtlasInstallState -StatePath $path).fromVersion | Should -BeExactly '0.6.1'
+    }
+
+    It 'refuses an install state whose starting version is not text' {
+        $path = New-TestInstallStatePath
+        Start-AtlasInstallState -StatePath $path -TargetVersion '0.6.3' -Mode Upgrade -FromVersion '0.6.2' | Out-Null
+        $state = [IO.File]::ReadAllText($path) | ConvertFrom-Json
+        $state.fromVersion = 62
+        [IO.File]::WriteAllText($path, ($state | ConvertTo-Json -Compress))
+
+        { Get-AtlasInstallState -StatePath $path } | Should -Throw '*invalid fromVersion*'
+    }
+}
+
 Describe 'Atlas.InstallState update path' {
     It 'stores Keep unless asked to choose again' {
         $keep = New-TestInstallStatePath

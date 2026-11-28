@@ -1,6 +1,8 @@
 @{
     Name        = 'Disable File Explorer Home'
     Description = 'Removes Home from File Explorer and opens File Explorer to This PC.'
+    OnUpgrade   = 'Once'
+    Since       = '0.6.0'
     Registry    = @(
         @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}'; Operation = 'DeleteKey' }
         # Explorer can also discover Home dynamically from its registered shell class.

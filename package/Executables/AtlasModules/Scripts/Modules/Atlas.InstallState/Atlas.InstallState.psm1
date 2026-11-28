@@ -170,6 +170,15 @@ function Assert-AtlasInstallStateDocument {
         ($choices.Value -isnot [string] -or $script:AtlasInstallChoices -cnotcontains $choices.Value)) {
         throw "Install state has an invalid choices value '$($choices.Value)'."
     }
+    # The Atlas version an update or reinstall starts from. Optional, so an install
+    # state written before it existed still loads.
+    $fromVersion = $State.PSObject.Properties['fromVersion']
+    if ($null -ne $fromVersion -and $null -ne $fromVersion.Value -and
+        ($fromVersion.Value -isnot [string] -or
+            [string]::IsNullOrWhiteSpace($fromVersion.Value) -or
+            $fromVersion.Value.Length -gt 128)) {
+        throw 'Install state has an invalid fromVersion.'
+    }
     # Only last.json has it: what the PC had for each choice when the run completed.
     $recorded = $State.PSObject.Properties['recordedOptions']
     if ($null -ne $recorded) {
@@ -356,6 +365,9 @@ function Start-AtlasInstallState {
         # How an update treats the choices the PC has (Resolve-AtlasInstallChoices).
         [ValidateSet('Keep', 'ChooseAgain')]
         [string]$Choices = 'Keep',
+        # The Atlas version on the PC before this install (Get-AtlasInstalledVersion),
+        # which decides the preference tweaks an update applies. Unused on a fresh install.
+        [string]$FromVersion,
         [string]$CaptureNonce = ([Guid]::NewGuid().ToString('D')),
         [string]$StatePath
     )
@@ -363,6 +375,10 @@ function Start-AtlasInstallState {
     if ([string]::IsNullOrWhiteSpace($TargetVersion) -or $TargetVersion.Length -gt 128) {
         throw 'TargetVersion must be a non-empty string of at most 128 characters.'
     }
+    if (-not [string]::IsNullOrWhiteSpace($FromVersion) -and $FromVersion.Length -gt 128) {
+        throw 'FromVersion must be at most 128 characters.'
+    }
+    $installFrom = if ($Mode -cne 'Fresh' -and -not [string]::IsNullOrWhiteSpace($FromVersion)) { $FromVersion } else { $null }
     if ([string]::IsNullOrWhiteSpace($CaptureNonce) -or $CaptureNonce.Length -gt 256) {
         throw 'CaptureNonce must be a non-empty string of at most 256 characters.'
     }
@@ -453,6 +469,12 @@ function Start-AtlasInstallState {
                     $changed = $true
                 }
             }
+            # The PC keeps its installed version until a run completes, so a resumed run
+            # that never recorded where it started can still take it.
+            if ($null -ne $installFrom -and $null -eq $existing.PSObject.Properties['fromVersion']) {
+                $existing | Add-Member -NotePropertyName fromVersion -NotePropertyValue $installFrom
+                $changed = $true
+            }
             if ($changed) {
                 Write-AtlasInstallStateFile -Path $resolvedPath -State $existing -CreateBackup
             }
@@ -475,6 +497,9 @@ function Start-AtlasInstallState {
             captureNonce   = $CaptureNonce
             completedSteps = @()
             lastError      = $null
+        }
+        if ($null -ne $installFrom) {
+            $state | Add-Member -NotePropertyName fromVersion -NotePropertyValue $installFrom
         }
         Write-AtlasInstallStateFile -Path $resolvedPath -State $state
         return $state

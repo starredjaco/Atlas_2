@@ -6,7 +6,7 @@ Don't edit it by hand: edit the source and regenerate.
 The [tweak definition schema](../../package/Executables/AtlasModules/Scripts/Tweaks/README.md#tweak-schema) describes every key.
 
 - Categories: 8
-- Category tweaks: 174
+- Category tweaks: 175
 - Standalone tweaks: 3
 - Disabled definitions: 5
 
@@ -21,6 +21,7 @@ Standalone tweaks run at their own positions in [the install plan](../architectu
   "Only with option `x`" needs that choice in Atlas Manager.
   "Fresh installs only" comes from `OnUpgrade = 'Skip'`, and "Fresh and Rebase installs only" adds `OnRebase = 'Run'`.
   "Not on fresh installs" comes from `OnUpgrade = 'Only'`.
+  "Once" comes from `OnUpgrade = 'Once'` and `Since`: a preference that applies on fresh installs and on the update that first includes it, then stays the user's.
   "ARM64 only" and "x64 only" come from `Arch`, and the Windows build conditions from `MinBuild` and `MaxBuild`.
 - **Work** lists the keys the definition declares, in the order the install applies them.
   A number counts entries, so `Registry 3` is three registry entries, and `Toggle` names the toggle state the tweak applies and records.
@@ -81,7 +82,7 @@ Install modes: Fresh, Upgrade, Reapply and Rebase.
 | `disable-win-error-reporting`<br>Disable Windows Error Reporting | Turns off Windows Error Reporting, so crash and error reports aren't sent to Microsoft. | | Registry 2 |
 | `disallow-ms-accounts`<br>Block Adding Microsoft Accounts | Stops users adding Microsoft accounts to Windows or switching a local account to one in Settings. Signing in to individual apps, such as Microsoft Store and Xbox, still works. | | Registry 1 |
 | `disallow-user-activity-upload`<br>Disallow Upload and Publish of User Activities | Stops Windows publishing your activity history and uploading it to Microsoft. | | Registry 2 |
-| `search-settings`<br>Configure Search on the Taskbar | Turns off web and cloud results, search history, location use and search highlights in Windows Search, and shows search as an icon on the taskbar. | | Registry 10 |
+| `search-settings`<br>Configure Windows Search Privacy | Turns off web and cloud results, search history, location use and search highlights in Windows Search. | | Registry 8 |
 | `apply-privacy-toggle-defaults`<br>Apply Privacy Toggle Defaults | Turns off Phone Link, recent-item tracking and web search through their toggles, and records each choice so updates and new accounts keep it. | | Toggle [PhoneLink](toggles.md#phonelink) Disable, Toggle [RecentItems](toggles.md#recentitems) Disable, Toggle [WebSearch](toggles.md#websearch) Disable |
 | `apps/disable-nvidia-telemetry`<br>Disable NVIDIA Control Panel Telemetry | Opts out of NVIDIA Control Panel telemetry. | | Registry 1 |
 | `apps/disable-office-telemetry`<br>Disable Office Telemetry | Turns off Microsoft Office telemetry and customer data collection. | | Registry 3 |
@@ -109,28 +110,28 @@ Install modes: Fresh, Upgrade, Reapply and Rebase.
 | --- | --- | --- | --- |
 | `bcdedit-tweaks`<br>Configure Boot Configuration | Uses the legacy boot menu, which appears before Windows starts loading, and sets its timeout to 10 seconds. | | Run 2 |
 | `best-wallpaper-quality`<br>Disable Wallpaper Compression | Stops Windows compressing JPEG wallpapers, so they show at full quality. | | Registry 1 |
-| `disable-mouse-accel`<br>Disable Mouse Acceleration | Turns off mouse acceleration (Enhance pointer precision), so the pointer moves the same distance for the same mouse movement at any speed. | | Registry 3 |
+| `disable-mouse-accel`<br>Disable Mouse Acceleration | Turns off mouse acceleration (Enhance pointer precision), so the pointer moves the same distance for the same mouse movement at any speed. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 3 |
 | `set-keyboard-switching`<br>Set Keyboard Language Switching | Applies the keyboard language switching method chosen in Atlas Manager through the KeyboardShortcuts toggle. | | Script `set-keyboard-switching.ps1` |
 | `disable-settings-tips`<br>Disable Settings Tips | Turns off online tips in Settings. | | Registry 1 |
-| `disable-spell-checking`<br>Disable Spell Checking | Turns off spell checking, autocorrection, text suggestions and double-tap space for the touch keyboard. | | Registry 5 |
+| `disable-spell-checking`<br>Disable Spell Checking | Turns off spell checking, autocorrection, text suggestions and double-tap space for the touch keyboard. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 5 |
 | `disable-store-auto-updates`<br>Disable Automatic Updates for Apps in Store | Stops Microsoft Store updating apps automatically, so you choose when apps update. | | Registry 1 |
-| `disable-touch-keyboard-features`<br>Disable Unnecessary Touch Keyboard Settings | Turns off automatic capitalisation and key sounds on the touch keyboard. | | Registry 2 |
-| `disable-touch-visual-feedback`<br>Disable Touch Visual Feedback | Turns off the visual feedback Windows shows where you touch the screen. | | Registry 2 |
-| `disable-usb-issues-notifications`<br>Disable 'Notify About USB Issues' | Turns off notifications about USB connection problems and weak chargers, which often warn about problems that aren't there. | | Registry 2 |
+| `disable-touch-keyboard-features`<br>Disable Unnecessary Touch Keyboard Settings | Turns off automatic capitalisation and key sounds on the touch keyboard. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 2 |
+| `disable-touch-visual-feedback`<br>Disable Touch Visual Feedback | Turns off the visual feedback Windows shows where you touch the screen. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 2 |
+| `disable-usb-issues-notifications`<br>Disable 'Notify About USB Issues' | Turns off notifications about USB connection problems and weak chargers, which often warn about problems that aren't there. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 2 |
 | `disable-windows-feedback`<br>Disable Windows Feedback | Stops Windows asking for feedback. | | Registry 3 |
 | `disable-windows-spotlight`<br>Disable Windows Spotlight | Turns off Windows Spotlight on the lock screen and desktop, including its tips and "Like what you see?" prompts. | | Registry 11 |
-| `do-not-reduce-sounds`<br>Do Not Reduce Sounds While in a Call | Stops Windows lowering other sounds while you're in a call. | | Registry 1 |
-| `hide-disabled-disconnected-sounds`<br>Hide Disabled and Disconnected Devices in Sounds Panel | Hides disabled and disconnected devices in the Sound control panel (mmsys.cpl). | | Registry 2 |
+| `do-not-reduce-sounds`<br>Do Not Reduce Sounds While in a Call | Stops Windows lowering other sounds while you're in a call. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `hide-disabled-disconnected-sounds`<br>Hide Disabled and Disconnected Devices in Sounds Panel | Hides disabled and disconnected devices in the Sound control panel (mmsys.cpl). | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 2 |
 | `show-all-tasks-control-panel`<br>Show All Tasks in Control Panel | Adds All Tasks, also called God Mode, to Control Panel: one list of every Control Panel setting. | | Registry 6 |
-| `visual-effects`<br>Configure Visual Effects | Applies the Atlas visual effects: window and taskbar animations and Aero Peek are off, while font smoothing, thumbnails, window contents while dragging and selection effects stay on. | | Registry 11 |
+| `visual-effects`<br>Configure Visual Effects | Applies the Atlas visual effects: window and taskbar animations and Aero Peek are off, while font smoothing, thumbnails, window contents while dragging and selection effects stay on. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 11 |
 | `disable-tips`<br>Disable Tips | Turns off Windows tips through the CloudContent policy, which Enterprise and Education editions enforce. | | Registry 1 |
 | `disable-win11-settings-banner`<br>Disable Windows 11 Settings Banner | Hides the banner at the top of Settings, which shows offers such as Microsoft 365 on editions other than Enterprise. | | Registry 1 |
-| `disable-screen-capture-hotkey`<br>Disable Screen Capture Hotkey | Stops the Print Screen key opening screen capture once Snipping Tool is removed. | Only with option `remove-snipping-tool` | Registry 1 |
-| `disable-dynamic-lighting`<br>Disable Dynamic Lighting | Turns off Dynamic Lighting, which lets Windows control the RGB lighting on compatible devices. | | Registry 1 |
+| `disable-screen-capture-hotkey`<br>Disable Screen Capture Hotkey | Stops the Print Screen key opening screen capture once Snipping Tool is removed. | Only with option `remove-snipping-tool`; Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `disable-dynamic-lighting`<br>Disable Dynamic Lighting | Turns off Dynamic Lighting, which lets Windows control the RGB lighting on compatible devices. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
 | `disable-auto-app-archival`<br>Disable Automatic Store App Archiving | Stops Microsoft Store archiving apps you rarely use, so they don't disappear and need downloading again. | | Toggle [AppStoreArchiving](toggles.md#appstorearchiving) Disable |
 | `add-sharing-settings-shortcut`<br>Add Network Sharing Shortcut | Adds a shortcut to the network sharing settings in the File Sharing folder in AtlasDesktop. | | Script `add-sharing-settings-shortcut.ps1` |
 | `appearance/atlas-theme`<br>Add Theme | Sets the lock screen policy on fresh installs. The dark theme and lock screen image need a real user session, so Initialize-NewUser applies them: for the install user during the install, and for each new account at its first sign-in. | Fresh installs only | Registry 1, Script `atlas-theme.ps1` |
-| `appearance/disallow-theme-changes`<br>Disallow Themes to Change Certain Personalized Features | Stops themes changing your mouse pointers and desktop icons, so a theme changes only its wallpaper, colours and sounds. | | Registry 2 |
+| `appearance/disallow-theme-changes`<br>Disallow Themes to Change Certain Personalized Features | Stops themes changing your mouse pointers and desktop icons, so a theme changes only its wallpaper, colours and sounds. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 2 |
 | `windows-update/disable-nagging`<br>Disable WU Nagging | Hides the Windows Update link that offers the Media Creation Tool for a newer Windows release. | | Registry 1 |
 | `windows-update/disable-insider`<br>Restrict Windows Insider | Blocks Windows Insider Preview builds and hides the Windows Insider Program page in Settings, avoiding extra data collection, reverted settings and unstable builds. | | Registry 6 |
 | `windows-update/disable-msrt-telemetry`<br>Disable MSRT telemetry | Stops the Malicious Software Removal Tool reporting infection information and heartbeat data to Microsoft. | | Registry 3 |
@@ -139,35 +140,36 @@ Install modes: Fresh, Upgrade, Reapply and Rebase.
 | `windows-update/disable-auto-updates`<br>Prevent Dev Home and Outlook Reinstalls | Stops Windows Update reinstalling Dev Home and Outlook. It applies whether or not automatic updates stay on. | | Registry 4 |
 | `windows-update/disable-auto-reboot`<br>Disable automatic Windows Update restarts | Stops Windows Update restarting the PC while someone is signed in, and waking it to install updates. | | Registry 2 |
 | `windows-update/disable-delivery-optimization`<br>Disable Delivery Optimization | Turns off Delivery Optimization peer-to-peer downloads, so this PC doesn't share update data with other PCs in the background. | | Registry 1 |
-| `ease-of-access/disable-always-read-section`<br>Disable 'Always Read and Scan This Section' | Turns off "Always read this section aloud" and "Always scan this section" in the Ease of Access Center. | | Registry 2 |
-| `ease-of-access/disable-annoying-features-shortcuts`<br>Disable Commonly Annoying Features and Shortcuts | Turns off the keyboard shortcuts for Sticky Keys, Filter Keys, Toggle Keys, Mouse Keys, High Contrast and Narrator, such as pressing Shift five times. Accessibility features you've turned on stay on. | | Registry 6 |
-| `ease-of-access/disable-making-touch-easier`<br>Disable Accessibility Tool Shortcut | Turns off the shortcut that opens accessibility tools with the Windows logo key and Volume Up, labelled "Make touch and tablets easier to use". | | Registry 1 |
-| `ease-of-access/disable-warning-sounds`<br>Disable Ease of Access Sounds | Turns off the sounds Ease of Access plays when a shortcut turns a feature on, such as the Sticky Keys sound, and visual warnings for sounds. | | Registry 3 |
+| `ease-of-access/disable-always-read-section`<br>Disable 'Always Read and Scan This Section' | Turns off "Always read this section aloud" and "Always scan this section" in the Ease of Access Center. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 2 |
+| `ease-of-access/disable-annoying-features-shortcuts`<br>Disable Commonly Annoying Features and Shortcuts | Turns off the keyboard shortcuts for Sticky Keys, Filter Keys, Toggle Keys, Mouse Keys, High Contrast and Narrator, such as pressing Shift five times. Accessibility features you've turned on stay on. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 6 |
+| `ease-of-access/disable-making-touch-easier`<br>Disable Accessibility Tool Shortcut | Turns off the shortcut that opens accessibility tools with the Windows logo key and Volume Up, labelled "Make touch and tablets easier to use". | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `ease-of-access/disable-warning-sounds`<br>Disable Ease of Access Sounds | Turns off the sounds Ease of Access plays when a shortcut turns a feature on, such as the Sticky Keys sound, and visual warnings for sounds. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 3 |
 | `taskbar/disable-cloud-optimized-content`<br>Disable Cloud Optimized Content on Taskbar | Turns off cloud-optimised content, which adds taskbar pins that depend on things like a linked phone or Xbox Live. | | Registry 1 |
 | `taskbar/disable-news-and-interests`<br>Disable News and Interests | Turns off Widgets (News and Interests) and its third-party content through the Widgets toggle. | | Toggle [Widgets](toggles.md#widgets) Disable |
-| `taskbar/hide-task-view`<br>Disable Task View on Taskbar | Hides the Task View button on the taskbar; Windows+Tab still opens Task View. | | Registry 2 |
+| `taskbar/hide-task-view`<br>Disable Task View on Taskbar | Hides the Task View button on the taskbar; Windows+Tab still opens Task View. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 2 |
 | `taskbar/disable-copilot`<br>Disable Microsoft Copilot | Sets the policy that removes the Microsoft Copilot app on editions that honour it. The install removes the Copilot app and its taskbar pin separately. | | Registry 1 |
-| `taskbar/set-to-left`<br>Set Taskbar to Align Left | Aligns the taskbar to the left instead of the centre. | | Registry 1 |
-| `taskbar/end-task`<br>Add 'End task' to the taskbar | Adds End task to the right-click menu of apps on the taskbar. | | Registry 1 |
-| `explorer/always-more-details-transfer`<br>Show More Details by Default on Transfers | Shows the detailed view of file transfers by default, with the speed of each copy, move or delete. | | Registry 1 |
+| `taskbar/set-to-left`<br>Set Taskbar to Align Left | Aligns the taskbar to the left instead of the centre. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `taskbar/search-icon`<br>Show Search as an Icon on the Taskbar | Shows search on the taskbar as an icon instead of a search box. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 2 |
+| `taskbar/end-task`<br>Add 'End task' to the taskbar | Adds End task to the right-click menu of apps on the taskbar. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `explorer/always-more-details-transfer`<br>Show More Details by Default on Transfers | Shows the detailed view of file transfers by default, with the speed of each copy, move or delete. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
 | `explorer/disable-invalid-shortcuts-search`<br>Disable Searching for Invalid Shortcuts | Stops Windows searching drives or using NTFS link tracking to repair shortcuts whose target has moved, so a broken shortcut fails straight away. | | Registry 2 |
-| `explorer/disable-check-boxes`<br>Disable Use Check Boxes to Select Items | Turns off check boxes for selecting items in File Explorer. | | Registry 1 |
-| `explorer/disable-network-navigation-pane`<br>Disable Network Navigation Pane in Explorer | Hides Network in the File Explorer navigation pane. | | Registry 1 |
+| `explorer/disable-check-boxes`<br>Disable Use Check Boxes to Select Items | Turns off check boxes for selecting items in File Explorer. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `explorer/disable-network-navigation-pane`<br>Disable Network Navigation Pane in Explorer | Hides Network in the File Explorer navigation pane. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
 | `explorer/full-context-on-more-than-15-items`<br>Always Show the Full Context Menu On Items | Keeps the full context menu when more than 15 files are selected, by raising the limit to 100. | | Registry 1 |
-| `explorer/hide-frequently-used-items`<br>Hide Recent Items | Stops Windows keeping and showing recent files and frequent folders in Quick Access, Start and jump lists, and clears recent documents when you sign out. | | Registry 6 |
+| `explorer/hide-frequently-used-items`<br>Hide Recent Items | Stops Windows keeping and showing recent files and frequent folders in Quick Access, Start and jump lists, and clears recent documents when you sign out. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 6 |
 | `explorer/import-power-plan`<br>Add Power Plan File Association | Lets you import a power plan by opening its .pow file and confirming the administrator prompt. | | Registry 5 |
 | `explorer/minimize-mouse-hover-time`<br>Minimize Mouse Hover Time for Item Info | Shortens the hover delay before item information appears, mostly in File Explorer, from 400 ms to 20 ms. | | Registry 1 |
 | `explorer/no-internet-open-with`<br>Disable Internet File Association Service | Stops Windows offering to look online for an app when you open a file with an unknown extension. | | Registry 1 |
-| `explorer/open-to-this-pc`<br>Open File Explorer to This PC | Opens File Explorer to This PC instead of Quick Access. | | Registry 1 |
+| `explorer/open-to-this-pc`<br>Open File Explorer to This PC | Opens File Explorer to This PC instead of Quick Access. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
 | `explorer/removable-drives-only-this-pc`<br>Show Removable Drives Only in 'This PC' | Shows removable drives only under This PC, not as separate entries in the File Explorer navigation pane. | | Registry 2 |
 | `explorer/remove-previous-versions`<br>Remove Previous Versions from Explorer | Removes Previous Versions from the context menu and from file properties. | | Registry 10 |
 | `explorer/remove-shortcut-text`<br>Remove Shortcut Text | Stops Windows adding " - Shortcut" to the names of new shortcuts. | | Registry 1 |
-| `explorer/show-files`<br>Configure Explorer to Show All Files with File Extensions | Shows hidden files and file name extensions in File Explorer, so disguised files such as invoice.pdf.exe are easier to spot. | | Registry 2 |
+| `explorer/show-files`<br>Configure Explorer to Show All Files with File Extensions | Shows hidden files and file name extensions in File Explorer, so disguised files such as invoice.pdf.exe are easier to spot. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 2 |
 | `explorer/classic-search`<br>Disable Legacy File Explorer Search Redirect | Removes the legacy File Explorer search redirect, which causes Visual C++ runtime errors in File Explorer on newer Windows builds. | | Registry 5 |
-| `explorer/dont-show-office-files`<br>Don't Show Office Files | Stops Home in File Explorer showing files from Office.com. | | Registry 1 |
-| `explorer/use-compact-mode`<br>Use Compact Mode | Uses compact view in File Explorer, which reduces the space between items. | | Registry 1 |
-| `explorer/disable-gallery`<br>Hide Gallery in File Explorer | Hides Gallery from the File Explorer navigation pane. | | Registry 1 |
-| `explorer/disable-home`<br>Disable File Explorer Home | Removes Home from File Explorer and opens File Explorer to This PC. | | Registry 3 |
+| `explorer/dont-show-office-files`<br>Don't Show Office Files | Stops Home in File Explorer showing files from Office.com. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `explorer/use-compact-mode`<br>Use Compact Mode | Uses compact view in File Explorer, which reduces the space between items. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `explorer/disable-gallery`<br>Hide Gallery in File Explorer | Hides Gallery from the File Explorer navigation pane. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `explorer/disable-home`<br>Disable File Explorer Home | Removes Home from File Explorer and opens File Explorer to This PC. | Once: fresh installs, and updates from Atlas versions before 0.6.0 | Registry 3 |
 | `explorer/debloat-send-to`<br>Debloat Send-To Context Menu | Hides rarely used entries in the Send to menu for the install user. | Fresh installs only | Script `debloat-send-to.ps1` as the install user |
 | `explorer/enable-long-paths`<br>Enable Long Paths | Lets apps that support it use file paths longer than 260 characters. | | Registry 1 |
 | `explorer/add-context-menus/merge-as-administrator`<br>Add 'Merge as administrator' to Context Menu | Adds Merge as administrator to the context menu of registry (.reg) files, which merges the file after an administrator prompt. | | Script `merge-as-administrator.ps1` |
@@ -185,17 +187,17 @@ Install modes: Fresh, Upgrade, Reapply and Rebase.
 | `explorer/remove-context-menus/printing`<br>Remove 'Printing' from Context Menus | Removes Print from file context menus; apps keep their own print commands. | | Registry 19 |
 | `explorer/remove-context-menus/printing-windows-11`<br>Remove Windows 11 Printing Context Menu Entries | Removes Print from the Windows 11 context menu for app files, the same change as the context menu part of the Printing toggle. | | Registry 6 |
 | `security/disable-uac-secure-desktop`<br>Disable UAC Secure Desktop | Shows UAC prompts on the normal desktop instead of the secure desktop, so the screen doesn't dim. The secure desktop stops other software spoofing or interacting with the prompt; without it, other apps can draw over UAC prompts or read what you type into them. | | Registry 1 |
-| `shell/alt-tab-open-windows`<br>Do Not Show Edge Tabs in Alt-Tab | Sets Alt+Tab to show open windows only, so individual Edge tabs don't crowd it. | | Registry 1 |
-| `shell/disable-aero-shake`<br>Disable Aero Shake | Turns off Aero Shake, which minimises all other windows when you shake a window and is easy to trigger by accident. | | Registry 1 |
+| `shell/alt-tab-open-windows`<br>Do Not Show Edge Tabs in Alt-Tab | Sets Alt+Tab to show open windows only, so individual Edge tabs don't crowd it. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `shell/disable-aero-shake`<br>Disable Aero Shake | Turns off Aero Shake, which minimises all other windows when you shake a window and is easy to trigger by accident. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
 | `shell/disable-low-disk-warning`<br>Disable Low Disk Space Checks | Turns off low disk space warnings. A drive can then fill up without warning, which stops updates and shadow copies working. | | Registry 1 |
 | `shell/disable-menu-delay`<br>Disable Menu Hover Delay | Opens submenus as soon as you hover over them, without the usual delay. | | Registry 1 |
 | `shell/disable-network-location-wizard`<br>Disable Network Location Wizard | Turns off the prompt that asks whether the PC should be discoverable when it joins a new network. | | Registry 1 |
-| `shell/set-unpinned-notification-items`<br>Set Unpinned Control Center Items | Unpins rarely used buttons, such as Cast and Nearby Sharing, from Quick Settings. | | Registry 3, PostUserRegistryRefresh `ExplorerRefresh` |
-| `shell/restore-old-context-menu`<br>Restore Old Context Menu | Uses the full classic context menu in Windows 11 instead of the compact one. | | Registry 1 |
-| `shell/show-more-pins`<br>Show More Pins in Start | Shows more pins in Start and fewer recommendations. | | Registry 1 |
-| `shell/no-recommendations-start-menu`<br>Disable Recommendations in the Start Menu | Stops Start recommending tips, shortcuts, new apps and other items. | | Registry 2 |
-| `shell/disable-nearby-sharing`<br>Disable Shared Experiences | Turns off Shared experiences and Nearby sharing, which share content with nearby devices. | | Registry 3 |
-| `shell/config-autorun`<br>Disable AutoRun | Turns off AutoPlay, so Windows takes no action when you connect a drive, phone or camera. | | Registry 5 |
+| `shell/set-unpinned-notification-items`<br>Set Unpinned Control Center Items | Unpins rarely used buttons, such as Cast and Nearby Sharing, from Quick Settings. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 3, PostUserRegistryRefresh `ExplorerRefresh` |
+| `shell/restore-old-context-menu`<br>Restore Old Context Menu | Uses the full classic context menu in Windows 11 instead of the compact one. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `shell/show-more-pins`<br>Show More Pins in Start | Shows more pins in Start and fewer recommendations. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 1 |
+| `shell/no-recommendations-start-menu`<br>Disable Recommendations in the Start Menu | Stops Start recommending tips, shortcuts, new apps and other items. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 2 |
+| `shell/disable-nearby-sharing`<br>Disable Shared Experiences | Turns off Shared experiences and Nearby sharing, which share content with nearby devices. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 3 |
+| `shell/config-autorun`<br>Disable AutoRun | Turns off AutoPlay, so Windows takes no action when you connect a drive, phone or camera. | Once: fresh installs, and updates from Atlas versions before 0.4.1 | Registry 5 |
 | `startup-shutdown/decrease-shutdown-time`<br>Decrease Shutdown Time | Shortens how long Windows waits for unresponsive or closing apps at shutdown to 2 seconds. | | Registry 2 |
 | `startup-shutdown/disable-startup-delay`<br>Disable Startup Delay | Removes the delay Windows adds before it starts your startup apps. | | Registry 1 |
 | `system/crash-control-qol`<br>Configure Crash Control | Keeps the stop error (blue screen) on screen with more detail instead of restarting automatically. Windows still writes a 256 KiB minidump and logs the stop code, so crashes stay diagnosable, but skips full memory dumps. | | Registry 5 |
